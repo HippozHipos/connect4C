@@ -63,21 +63,38 @@ void EZ_DrawCircle(EZ_SDL_Context* context, int32_t centreX, int32_t centreY, in
     }
 }
 
-void EZ_FillCircle(EZ_SDL_Context* context, int x, int y, int radius){
+//void EZ_FillCircle(EZ_SDL_Context* context, int x, int y, int radius){
+//
+//    SDL_SetRenderDrawColor(context->renderer, 
+//        context->c.r, context->c.g, context->c.b, context->c.a);
+//
+//    for (int w = 0; w < radius * 2; w++)
+//    {
+//        for (int h = 0; h < radius * 2; h++)
+//        {
+//            int dx = radius - w; // horizontal offset
+//            int dy = radius - h; // vertical offset
+//            if ((dx * dx + dy * dy) <= (radius * radius))
+//            {
+//                SDL_RenderDrawPoint(context->renderer, x + dx, y + dy);
+//            }
+//        }
+//    }
+//}
 
-    SDL_SetRenderDrawColor(context->renderer, 
-        context->c.r, context->c.g, context->c.b, context->c.a);
-
-    for (int w = 0; w < radius * 2; w++)
+void EZ_FillCircle(EZ_SDL_Context* context, int cx, int cy, int radius)
+{
+    // Note that there is more to altering the bitrate of this 
+    // method than just changing this value.  See how pixels are
+    // altered at the following web page for tips:
+    //   http://www.libsdl.org/intro.en/usingvideo.html
+    static const int BPP = 4;
+    SDL_SetRenderDrawColor(context->renderer, context->c.r, context->c.g, context->c.b, context->c.a);
+    for (int dy = 1; dy <= radius; dy += 1)
     {
-        for (int h = 0; h < radius * 2; h++)
-        {
-            int dx = radius - w; // horizontal offset
-            int dy = radius - h; // vertical offset
-            if ((dx * dx + dy * dy) <= (radius * radius))
-            {
-                SDL_RenderDrawPoint(context->renderer, x + dx, y + dy);
-            }
-        }
+        int dx = (int)floor(sqrt((2.0 * radius * dy) - (dy * dy)));
+        int x = cx - dx;
+        SDL_RenderDrawLine(context->renderer, cx - dx, cy + dy - radius, cx + dx, cy + dy - radius);
+        SDL_RenderDrawLine(context->renderer, cx - dx, cy - dy + radius, cx + dx, cy - dy + radius);
     }
 }

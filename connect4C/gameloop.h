@@ -5,35 +5,79 @@
 
 void runGameLoop(EZ_SDL_Context* context, Connect4* game) {
 
-    while (true) {
-        SDL_WaitEvent(&context->event);
-        if (context->event.type == SDL_QUIT) {
-            EZ_CleanUpSDL(context);
-            exit(0);
+    gameState = S_START;
+    nextState = S_START;
+
+    while (true){
+
+        bool mousePressed = false;
+        while (SDL_PollEvent(&context->event)) {
+
+            if (context->event.type == SDL_QUIT) {
+                EZ_CleanUpSDL(context);
+                exit(0);
+            }
+
+            if (context->event.type == SDL_MOUSEBUTTONDOWN) {
+                if (context->event.button.button == SDL_BUTTON_LEFT) {
+                    mousePressed = true;
+                }
+            }
         }
 
         int mouseX, mouseY;
-        uint32_t mousePressed = SDL_GetMouseState(&mouseX, &mouseY);
+        SDL_GetMouseState(&mouseX, &mouseY);
+        int ballOver = getMouseOverColumn(game, mouseX, mouseY);
 
-        getMouseOverColumn(&game->board, mouseX, mouseY);
-
-        //DRAW STUFF FROM HERE
         EZ_SetContextColor(context, 226, 220, 205, 255);
         EZ_Clear(context);
 
-        Board board = game->board;
-        EZ_SetContextColor(context, 
-            board.color.r, board.color.g, board.color.b, board.color.a);
-        EZ_FillRect(context,
-            board.inScreen.x, board.inScreen.y, board.inScreen.w, board.inScreen.h);
+        switch (gameState) {
 
-        for (size_t i = 0; i < 42; i++) {
-            EZ_SetContextColor(context, 0, 0, 100, 255);
-            EZ_DrawCircle(context, game->holes[i].x, game->holes[i].y, game->holeRadius + 1);
-            EZ_SetContextColor(context, 226, 220, 205, 255);
-            EZ_FillCircle(context, game->holes[i].x, game->holes[i].y, game->holeRadius);
+            case S_START: {
+                connect4Init(game);
+                nextState = S_SELECTING_HOLE;
+                break;
+            }
+
+            case S_SELECTING_HOLE: {
+                drawBoard(context, &game->board);
+                drawHoles(context, game);
+                drawBallMoveableState(context, game, ballOver);
+                drawBalls(context, game);
+                if (game->usedBalls == 41) {
+                    nextState = S_START;
+                }
+                if (mousePressed && ballOver != -1) {
+                    SetBallInitial(game, ballOver);
+                    nextState = S_FALLING;
+                }
+                break;
+            }
+
+            case S_FALLING: {
+
+                drawBoard(context, &game->board);
+                drawBalls(context, game);
+                drawHoles(context, game);
+                int toDo = ballFall(game);
+
+                if (toDo == 0){
+                    nextState = S_SELECTING_HOLE;
+                }
+                else if (toDo == 1) {
+                    game->turn = !game->turn;
+                    nextState = S_SELECTING_HOLE;
+                }
+                else if (toDo == 2) {
+                    nextState = S_START;
+                }
+ 
+                break;
+            }
         }
 
         EZ_UpdateWindow(context);
+        gameState = nextState;
     }
 }
